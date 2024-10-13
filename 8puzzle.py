@@ -1,59 +1,118 @@
-import copy
+import heapq
+
 class Puzzle:
     def __init__(self):
-        self.board = [[2, 1, 3], [5, 7, 8], [0, 4, 6]]
-        self.end = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
-        self.dfs()
+        self.board = [
+        [1, 2, 3],
+        [4, 0, 5],
+        [7, 8, 6]
+    ]
+        self.end = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 0]
+    ]
     def getMoves(self, board):
         zero_pos = self.zero_index(board)
-        valid_moves = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-        for move in valid_moves:
+        moves = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+        valid_moves = []
+        for move in moves:
             if 0 <= zero_pos[0] + move[0] < 3 and 0 <= zero_pos[1] + move[1] < 3:
-                continue
-            else:
-                valid_moves.remove(move)
+                valid_moves.append(move)
         return valid_moves
 
     def zero_index(self, board):
-        idx = self.hash(board).find("0")+1
-        return [idx//3, idx%3]
-    
-    def hash(self, board):
-        res = ""
         for i in range(3):
             for j in range(3):
-                res += str(self.board[i][j])
-        return res
+                if board[i][j] == 0:
+                    return [i, j]
+    
+    def bhash(self, board):
+       return tuple(map(tuple, board))
+    
     def display(self, board):
         for ls in board:
             print(*ls)
+            
+    def manhattan_distance(self, state):
+        """Calculate the total Manhattan distance of the state."""
+        distance = 0
+        for i in range(3):
+            for j in range(3):
+                value = state[i][j]
+                if value != 0:  # Do not count the empty tile
+                    goal_x, goal_y = divmod(value - 1, 3)
+                    distance += abs(i - goal_x) + abs(j - goal_y)
+        return distance
+    
+    def a_star(self):
+        heap = []
+        heapq.heappush(heap, (self.manhattan_distance(self.board), 0, self.board, []))  # (priority, cost, current state, path)
+        visited = set()  # Track visited states
+
+        while heap:
+            priority, cost, state, path = heapq.heappop(heap)
+
+            # Convert the state to a tuple to store in a set (hashable)
+            state_tuple = tuple(map(tuple, state))
+
+            if state_tuple in visited:
+                continue
+
+            visited.add(state_tuple)
+
+            # If the current state is the goal state, return the path
+            if self.bhash(state) == self.bhash(self.end):
+                for p in path + [state]:
+                    self.display(p)
+                    print("------")
+                return
+
+            # Get all possible moves (neighbors) and add them to the heap
+            for move in self.getMoves(state):
+                new_board = [row[:] for row in state]
+                zeroPos = self.zero_index(new_board)
+                newPos = [zeroPos[0] + move[0], zeroPos[1] + move[1]]
+                new_board[newPos[0]][newPos[1]], new_board[zeroPos[0]][zeroPos[1]] = new_board[zeroPos[0]][zeroPos[1]], new_board[newPos[0]][newPos[1]]
+                if tuple(map(tuple, new_board)) not in visited:
+                    new_cost = cost + 1  # Each move has a cost of 1
+                    priority = new_cost + self.manhattan_distance(new_board)
+                    heapq.heappush(heap, (priority, new_cost, new_board, path + [state]))
+
     
     def dfs(self):
         stack = []
         visited = []
         stack.append(self.board)
-        visited.append(self.hash(self.board))
-        top = stack.pop()
-        while top != self.end:
+        visited.append(self.bhash(self.board))
+        while stack:
+            top = stack[-1]
+            if self.bhash(top) == self.bhash(self.end):
+                break
             valid_moves = self.getMoves(top)
             added = False
+            # print(zeroPos, valid_moves)
             for move in valid_moves:
-                new_board = top.copy()
-                zeroPos = self.zero_index(top)
-                print(zeroPos, move)
-                new_board[zeroPos[0] + move[0]][zeroPos[1] + move[1]], new_board[zeroPos[0]][zeroPos[1]] = new_board[zeroPos[0]][zeroPos[1]], new_board[zeroPos[0] + move[0]][zeroPos[1] + move[1]]
-                if self.hash(new_board) not in visited:
+                new_board = [row[:] for row in top]
+                zeroPos = self.zero_index(new_board)
+                newPos = [zeroPos[0] + move[0], zeroPos[1] + move[1]]
+                new_board[newPos[0]][newPos[1]], new_board[zeroPos[0]][zeroPos[1]] = new_board[zeroPos[0]][zeroPos[1]], new_board[newPos[0]][newPos[1]]
+                if self.bhash(new_board) not in visited:
                     stack.append(new_board)
-                    visited.append(self.hash(new_board))
+                    visited.append(self.bhash(new_board))
                     added = True
                     break
             if not added:
                 stack.pop()
-            top = stack.pop()
         while stack:
-            self.display(stack.pop())
+            self.display(stack.pop(0))
+            print("--------")
     
     
 c = Puzzle()
+print('DFS: ')
+c.dfs()
+print("MD: ")
+c.a_star()
 # print(c.zero_index("123405678"))
             
