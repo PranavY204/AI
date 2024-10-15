@@ -4,13 +4,13 @@ class Puzzle:
     def __init__(self):
         self.board = [
         [1, 2, 3],
-        [4, 0, 5],
-        [7, 8, 6]
+        [8, 0, 4],
+        [7, 6, 5]
     ]
         self.end = [
-        [1, 2, 3],
-        [4, 5, 6],
-        [7, 8, 0]
+        [2, 8, 1],
+        [0, 4, 3],
+        [7, 6, 5]
     ]
     def getMoves(self, board):
         zero_pos = self.zero_index(board)
@@ -37,17 +37,30 @@ class Puzzle:
     def manhattan_distance(self, state):
         """Calculate the total Manhattan distance of the state."""
         distance = 0
+        for i in range(9):
+            old = self.get_index(i, state)
+            final = self.get_index(i, self.end)
+            distance += (abs(final[0] - old[0]) + abs(final[1] - old[1]))
+        return distance
+    
+    def get_index(self, el, board):
         for i in range(3):
             for j in range(3):
-                value = state[i][j]
-                if value != 0:  # Do not count the empty tile
-                    goal_x, goal_y = divmod(value - 1, 3)
-                    distance += abs(i - goal_x) + abs(j - goal_y)
-        return distance
+                if board[i][j] == el:
+                    return [i, j]
+    
+    def misplaced(self, state):
+        misplaced = 0
+        for i in range(3):
+            for j in range(3):
+                if state[i][j] != self.endend[i][j]:
+                    misplaced += 1
+        return misplaced 
+
     
     def a_star(self):
         heap = []
-        heapq.heappush(heap, (self.manhattan_distance(self.board), 0, self.board, []))  # (priority, cost, current state, path)
+        heapq.heappush(heap, (self.manhattan_distance(self.board) + self.misplaced(self.board), 0, self.board, []))  # (priority, cost, current state, path)
         visited = set()  # Track visited states
 
         while heap:
@@ -75,8 +88,8 @@ class Puzzle:
                 newPos = [zeroPos[0] + move[0], zeroPos[1] + move[1]]
                 new_board[newPos[0]][newPos[1]], new_board[zeroPos[0]][zeroPos[1]] = new_board[zeroPos[0]][zeroPos[1]], new_board[newPos[0]][newPos[1]]
                 if tuple(map(tuple, new_board)) not in visited:
-                    new_cost = cost + 1  # Each move has a cost of 1
-                    priority = new_cost + self.manhattan_distance(new_board)
+                    new_cost = cost + 1 # Each move has a cost of 1
+                    priority = self.manhattan_distance(new_board) + self.misplaced(new_board)
                     heapq.heappush(heap, (priority, new_cost, new_board, path + [state]))
 
     
