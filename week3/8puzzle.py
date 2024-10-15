@@ -53,7 +53,7 @@ class Puzzle:
         misplaced = 0
         for i in range(3):
             for j in range(3):
-                if state[i][j] != self.endend[i][j]:
+                if state[i][j] != self.end[i][j]:
                     misplaced += 1
         return misplaced 
 
